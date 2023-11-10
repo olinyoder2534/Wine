@@ -36,7 +36,7 @@ t(t(sapply(wine, class)))
 #no major transformations are needed
 
 #check for multicollinearity
-GGally::ggpairs(wine)
+#GGally::ggpairs(wine)
 #nothing obvious signs
 
 #recode variables
@@ -60,17 +60,8 @@ pval <- pnorm(abs(summary_table[, "t value"]),lower.tail = FALSE)* 2
 summary_table <- cbind(summary_table, "p value" = round(pval,3))
 summary_table
 
-
-#--just checking some stuff
+#predictions
 predictions <- round(predict(model1,test.data1,type = "p"), 3)
-
-pre <- predict(model1, newdata = test.data1)
-pre[1]
-
-test.data1[1,]
-
-#come back and plug one example into the formula
-
 
 #brant test (check to see if the change in the independent variables is constant between steps in the dependent variables)
 brant(model1)
@@ -91,11 +82,8 @@ cv_model
 
 #Feature selection
 #using stepwise AIC
-step_model <- stepAIC(model1, direction = "both")l
+step_model <- stepAIC(model1, direction = "both")
 summary(step_model)
-
-brant(step_model)
-#VolatileAcidity, ResidualSugar, Chlorides, TotalSulfurDioxide, Density, pH, Alcohol, & ColorWhite may violate of the proportional odds assumption.
 
 #cross validation
 num_folds <- 5
@@ -204,7 +192,6 @@ training.samples2 <- wine2$NewQuality %>%
 train.data2  <- wine2[training.samples2, ]
 test.data2 <- wine2[-training.samples2, ]
 
-
 #ordinal model
 model2 <- polr(NewQuality ~ .- ColorID, data = train.data2, Hess=TRUE)
 summary(model2)
@@ -212,6 +199,27 @@ summary_table2 <- coef(summary(model2))
 pval2 <- pnorm(abs(summary_table2[, "t value"]),lower.tail = FALSE)* 2
 summary_table2 <- cbind(summary_table2, "p value" = round(pval2,3))
 summary_table2
+
+#predcitions
+predictions2 <- round(predict(model2,test.data2,type = "p"), 3)
+predictions2[1,]
+
+test.data1[1,]
+#interpretations for the first person in the test set
+#low
+-128.7379 -((1.393e-01*7.8)+(-4.491e+00*0.88)+(-5.361e-01*0)+(1.181e-01*2.6)+(-7.033e-01*.098)+(1.540e-02*25)+(-6.314e-03*67)+(-1.407e+02*.9968)+(9.928e-01*3.2)+(1.876e+00*.68)+(7.998e-01*9.8)+(-3.403e-01*0))
+exp(1.886621)/(1+exp(1.886621))
+#p(low) = .868
+
+#mid
+-123.7421 -((1.393e-01*7.8)+(-4.491e+00*0.88)+(-5.361e-01*0)+(1.181e-01*2.6)+(-7.033e-01*.098)+(1.540e-02*25)+(-6.314e-03*67)+(-1.407e+02*.9968)+(9.928e-01*3.2)+(1.876e+00*.68)+(7.998e-01*9.8)+(-3.403e-01*0))
+exp(6.882421)/(1+exp(6.882421)) - exp(1.886621)/(1+exp(1.886621))
+#p(mid) = .131
+
+#high
+1 - exp(1.886621)/(1+exp(1.886621)) - (exp(6.882421)/(1+exp(6.882421)) - exp(1.886621)/(1+exp(1.886621)))
+#p(high) = .001
+
 
 #model diagnostics
 brant(model2)
@@ -317,13 +325,4 @@ Red_cv_model <- train(
 
 Red_cv_model
 #the saturated model is better at predicting red wine than white wine
-
-
-
-
-
-
-
-
-
 
