@@ -10,8 +10,8 @@ library(brant)
 
 #LOADING DATA
 #----
-wineQuality <- read.csv('/Users/olinyoder/Desktop/Fall 2023/BSAN 480/Data/wine+quality/WineQuality.csv')
-wineLookup <- read.csv('/Users/olinyoder/Desktop/Fall 2023/BSAN 480/Data/wine+quality/WineQualityLookup.csv')
+wineQuality <- read.csv('FilePath.csv')
+wineLookup <- read.csv('FilePath.csv')
 
 dim(wineQuality)
 
