@@ -2,7 +2,7 @@ library(caret)
 library(e1071)
 library(MLmetrics)
 
-reg_rf_wine <- read.csv('/Users/olinyoder/Desktop/Fall 2023/BSAN 480/Data/wine+quality/WineQuality2RFRegressionEval2.csv')
+reg_rf_wine <- read.csv('WineQuality2RFRegressionEval2.csv')
 
 head(reg_rf_wine, 1)
 
