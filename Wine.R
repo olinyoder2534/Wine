@@ -24,7 +24,7 @@ head(wineLookup)
 head(wineQuality, 1)
 
 #Join data
-#joining data is only necessary for xgboost model (or you could one-hot encode "Color" from the wineQuality dataset instead of joining)
+#joining data is only necessary for xgboost model (or could one-hot encode "Color" from the wineQuality dataset instead of joining)
 wine <- merge(wineQuality, wineLookup, by = "ColorID")
 dim(wine)
 head(wine)
@@ -44,7 +44,7 @@ scale_mod(winelm)
 #PREPROCESSING
 #----
 #most visualizations and basic data exploration have been done elsewhere
-#no major changes are blatantly necessary
+#no major changes are necessary
 
 par(mfrow = c(1,2))
 #boxplot hist -- to change between hist & boxplot
@@ -61,7 +61,7 @@ hist(wine$Sulphates, main = "Sulphates")
 hist(wine$Alcohol, main = "Alcohol")
 hist(wine$Quality, main = "Quality")
 #most variables are slightly skewed right, not too major of a concern
-#transformations could be made, but I am going to hold off for now
+#transformations could be made, but not necessary
 #can check by color, too
 
 #check for multicollinearity
@@ -90,7 +90,7 @@ summary_table <- cbind(summary_table, "p value" = round(pval,3))
 summary_table
 
 #RMSE
-#would take quite a bit of time to get it to work properly with the given data, just use another metric
+#would take quite a bit of time to get it to work properly with the given data, just decided to use another metric
 #---
 predictions <- round(predict(model1,test.data1,type = "probs"), 3)
 predictions_multiplied <- sweep(round(predictions,0), 2, as.numeric(colnames(predictions)), "*")
