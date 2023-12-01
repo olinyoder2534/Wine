@@ -9,13 +9,16 @@ library(randomForest)
 library(brant)
 library(rms)
 library(xgboost)
+library(ordinal)
+library(mlr)
 
 #LOADING DATA
 #----
-wineQuality <- read.csv('FilePath.csv')
-wineLookup <- read.csv('FilePath.csv')
+wineQuality <- read.csv('WineQuality.csv')
+wineLookup <- read.csv('WineQualityLookup.csv')
 
 dim(wineQuality)
+dim(wineLookup)
 
 head(wineLookup)
 head(wineQuality, 1)
@@ -32,6 +35,12 @@ sum(is.na(wine))
 t(t(sapply(wine, class)))
 #----
 
+winelm <- lm(as.numeric(Quality) ~. - ColorID, wine)
+summary(winelm)
+plot(winelm)
+hist(resid(winelm))
+
+scale_mod(winelm)
 #PREPROCESSING
 #----
 #most visualizations and basic data exploration have been done elsewhere
@@ -73,15 +82,38 @@ test.data1 <- wine[-training.samples1, ]
 #ORDINAL LOGISTIC REGRESSION
 #----
 #saturated model
-model1 <- polr(Quality ~ ., data = train.data1, Hess=TRUE)
+model1 <- polr(Quality ~ . - ColorID, data = train.data1, method = "logistic", Hess=TRUE)
 summary(model1)
 summary_table <- coef(summary(model1))
 pval <- pnorm(abs(summary_table[, "t value"]),lower.tail = FALSE)* 2
 summary_table <- cbind(summary_table, "p value" = round(pval,3))
 summary_table
 
-#predictions
-predictions <- round(predict(model1,test.data1,type = "p"), 3)
+#RMSE
+#would take quite a bit of time to get it to work properly with the given data, just use another metric
+#---
+predictions <- round(predict(model1,test.data1,type = "probs"), 3)
+predictions_multiplied <- sweep(round(predictions,0), 2, as.numeric(colnames(predictions)), "*")
+predictions_multiplied_df <- as.data.frame(predictions_multiplied)
+predictions_multiplied_df
+
+predictions_non_zero <- apply(predictions_multiplied_df, 1, function(row) {
+  non_zero_values <- row[row != 0]
+  if (length(non_zero_values) > 0) {
+    return(paste(non_zero_values, collapse = ", "))
+  } else {
+    return("No non-zero values")
+  }
+})
+
+predictions_multiplied_df$NonZeroValues <- predictions_non_zero
+predictions_multiplied_df_no_zeros <- predictions_multiplied_df[, colSums(predictions_multiplied_df != 0) > 0]
+predictions_multiplied_df_no_zeros
+
+actual_ratings <- test_data$Quality
+rmse <- sqrt(mean((actual_ratings - predictions_multiplied_df)^2))
+rmse
+#---
 
 #test for proportional odds assumption
 #brant test (check to see if the change in the independent variables is constant between steps in the dependent variables)
@@ -101,6 +133,7 @@ cv_model <- train(
 cv_model
 #using method = logistic, ~ 54% accuracy
 
+
 #Feature selection
 #using stepwise AIC
 step_model <- stepAIC(model1, direction = "both")
@@ -112,6 +145,7 @@ brant(step_model)
 num_folds <- 5
 folds <- createFolds(wine$Quality, k = num_folds)
 
+#fix
 cv_results <- lapply(folds, function(fold_indices) {
   train_fold <- wine[-fold_indices, ]
   valid_fold <- wine[fold_indices, ]
@@ -126,7 +160,124 @@ average_accuracy <- mean(unlist(cv_results))
 average_accuracy
 #~54% total accuracy
 #stepwise did not improve accuracy
+
+#model1pred <- predict(model1, test.data1)
+#F1_Score(y_pred = model1pred, y_true = test.data1$Quality, positive = "0")
 #----
+
+#GROUP BY LOW-MED-HIGH
+#----
+#rather than trying to predict each specific quality on a numeric scale, what if we grouped the wine qualities into distinct buckets?
+#Low = Quality 1 - 5
+#Mid = Quality 6, 7
+#High = Quality 8, 9, 10
+
+#preprocessing
+wine2 <- wine
+wine2$Quality <- as.numeric(wine2$Quality)
+wine2$Quality <- wine2$Quality + 2
+as.data.frame(table(wine2$Quality))
+wine2$NewQuality <- with(wine2, ifelse(Quality >= 8, 'High',
+                                       ifelse(Quality >= 6 , 'Mid', 'Low')))
+wine2$NewQuality <- factor(wine2$NewQuality, order = TRUE, 
+                           levels = c("Low", "Mid", "High"))
+wine2$Quality <- NULL
+wine2$NewQuality <- as.factor(wine2$NewQuality)
+
+set.seed(123)
+
+training.samples2 <- wine2$NewQuality %>% 
+  createDataPartition(p = 0.7, list = FALSE)
+train.data2  <- wine2[training.samples2, ]
+test.data2 <- wine2[-training.samples2, ]
+
+#ordinal model
+model2 <- polr(NewQuality ~ .- ColorID, data = train.data2, Hess=TRUE)
+summary(model2)
+summary_table2 <- coef(summary(model2))
+pval2 <- pnorm(abs(summary_table2[, "t value"]),lower.tail = FALSE)* 2
+summary_table2 <- cbind(summary_table2, "p value" = round(pval2,3))
+summary_table2
+
+#predictions
+predictions2 <- round(predict(model2,test.data2,type = "p"), 3)
+predictions2[1,]
+
+#interpretations for the first person in the test set
+test.data1[1,]
+#low
+#-128.7379 -((1.393e-01*7.8)+(-4.491e+00*0.88)+(-5.361e-01*0)+(1.181e-01*2.6)+(-7.033e-01*.098)+(1.540e-02*25)+(-6.314e-03*67)+(-1.407e+02*.9968)+(9.928e-01*3.2)+(1.876e+00*.68)+(7.998e-01*9.8)+(-3.403e-01*0))
+#exp(1.886621)/(1+exp(1.886621))
+#p(low) = .868
+
+#mid
+#-123.7421 -((1.393e-01*7.8)+(-4.491e+00*0.88)+(-5.361e-01*0)+(1.181e-01*2.6)+(-7.033e-01*.098)+(1.540e-02*25)+(-6.314e-03*67)+(-1.407e+02*.9968)+(9.928e-01*3.2)+(1.876e+00*.68)+(7.998e-01*9.8)+(-3.403e-01*0))
+#exp(6.882421)/(1+exp(6.882421)) - exp(1.886621)/(1+exp(1.886621))
+#p(mid) = .131
+
+#high
+#1 - exp(1.886621)/(1+exp(1.886621)) - (exp(6.882421)/(1+exp(6.882421)) - exp(1.886621)/(1+exp(1.886621)))
+#p(high) = .001
+
+#model diagnostics
+brant(model2)
+#less issues 
+#maybe issues stemmed from breaking down the levels too far
+
+#cross validation
+ctrl2 <- trainControl(method = "cv", number = 5)
+
+cv_model2 <- train(
+  NewQuality ~ . - ColorID, 
+  data = wine2, 
+  method = "polr",
+  trControl = ctrl2
+)
+
+cv_model2
+#using method = logistic, ~ 71% accuracy
+
+#feature selection
+#---
+step_model2 <- stepAIC(model2, direction = "both")
+summary(step_model2)
+
+#cross validation
+folds2 <- createFolds(wine2$NewQuality, k = 5)
+
+cv_results2 <- lapply(folds2, function(fold_indices2) {
+  train_fold2 <- wine2[-fold_indices2, ]
+  valid_fold2 <- wine2[fold_indices2, ]
+  
+  cv_model2 <- polr(NewQuality ~ . - ColorID, data = train_fold2, Hess = TRUE)
+  step_model2 <- stepAIC(cv_model2, direction = "both", trace = 0)
+  
+  predictions3 <- predict(step_model2, newdata = valid_fold2, type = "class")
+  
+  # Convert predictions to ordered factor with correct levels
+  predictions3 <- factor(predictions3, ordered = TRUE, levels = levels(wine2$NewQuality))
+  
+  accuracy2 <- sum(predictions3 == valid_fold2$NewQuality) / length(valid_fold2$NewQuality)
+  return(accuracy2)
+})
+
+average_accuracy2 <- mean(unlist(cv_results2))
+average_accuracy2
+#~71% accuracy
+#---
+
+#random forest
+winerf2 <- randomForest(NewQuality ~ .- ColorID, data=train.data2, proximity=TRUE)
+#winerf2
+
+winep22 <- predict(winerf2, test.data2)
+confusionMatrix(winep22, test.data2$NewQuality)
+#~81 accuracy
+#----
+
+#---
+# REST OF FILE IS JUST FOR TESTING
+#---
 
 #RANDOM FOREST
 #----
@@ -135,6 +286,7 @@ winerf <- randomForest(Quality ~ .- ColorID, data=train.data1, proximity=TRUE)
 
 winep2 <- predict(winerf, test.data1)
 confusionMatrix(winep2, test.data1$Quality)
+#~67% accuracy
 
 #Optimal RF
 mtry_values1 <- c(seq(2,5))
@@ -180,7 +332,7 @@ ggplot(results_df1, aes(x = mtry1, y = ntree1, color = oob_error1)) +
 #can use the simplest amount of mtry + ntree combo -- simplest combo that is dark on the chart
 
 #train model
-final_rf1 <- randomForest(Quality ~ ., data = train.data1, mtry = best_mtry1, ntree = best_ntree1, proximity = TRUE)
+final_rf1 <- randomForest(Quality ~ . - ColorID, data = train.data1, mtry = best_mtry1, ntree = best_ntree1, proximity = TRUE)
 
 predictionsrf <- predict(final_rf1, newdata = test.data1)
 
@@ -196,21 +348,25 @@ accuracyrf
 wine3 <- wine
 wine3$Quality <- ordered(wine3$Quality)
 wine3$ColorID <- as.integer(wine3$ColorID)
+wine3$Color <- NULL
 
 set.seed(123)
 training_samples <- createDataPartition(wine3$Quality, p = 0.7, list = FALSE)
 train_data <- wine3[training_samples, ]
 test_data <- wine3[-training_samples, ]
 
-wine3$Color <- NULL
 train_data$Quality <- as.numeric(train_data$Quality)
 test_data$Quality <- as.numeric(test_data$Quality)
 
+#train_data$Quality <- train_data$Quality - 1
+#test_data$Quality <- test_data$Quality - 1
+
+#t(t(sapply(train_data, class)))
 dtrain <- xgb.DMatrix(data = as.matrix(train_data), label = train_data$Quality)
 
 params <- list(
-  objective = "reg:squarederror",
-  eval_metric = "rmse"
+  objective = "reg:squarederror", #objective = "multi:softprob",
+  eval_metric = "error" #rmse
 )
 
 xgb_model <- xgboost(
@@ -231,116 +387,19 @@ xgaccuracy <- sum(predicted_qualities == test_data$Quality) / length(test_data$Q
 xgaccuracy
 #most likely overfit 
 #or I did something wrong, which is also pretty likely
-#
 
-#----
 
-#GROUP BY LOW-MED-HIGH
-#----
-#rather than trying to predict each specific quality on a numeric scale, what if we grouped the wine qualities into distinct buckets?
-#Low = Quality 1 - 5
-#Mid = Quality 6, 7
-#High = Quality 8, 9, 10
-
-#preprocessing
-wine2 <- wine
-wine2$Quality <- as.numeric(wine2$Quality)
-cwine2$Quality <- wine2$Quality + 2
-as.data.frame(table(wine2$Quality))
-wine2$NewQuality <- with(wine2, ifelse(Quality >= 8, 'High',
-                                       ifelse(Quality >= 6 , 'Mid', 'Low')))
-wine2$NewQuality <- factor(wine2$NewQuality, order = TRUE, 
-                                    levels = c("Low", "Mid", "High"))
-wine2$Quality <- NULL
-wine2$NewQuality <- as.factor(wine2$NewQuality)
-
-training.samples2 <- wine2$NewQuality %>% 
-  createDataPartition(p = 0.7, list = FALSE)
-train.data2  <- wine2[training.samples2, ]
-test.data2 <- wine2[-training.samples2, ]
-
-#ordinal model
-model2 <- polr(NewQuality ~ .- ColorID, data = train.data2, Hess=TRUE)
-summary(model2)
-summary_table2 <- coef(summary(model2))
-pval2 <- pnorm(abs(summary_table2[, "t value"]),lower.tail = FALSE)* 2
-summary_table2 <- cbind(summary_table2, "p value" = round(pval2,3))
-summary_table2
-
-#predictions
-predictions2 <- round(predict(model2,test.data2,type = "p"), 3)
-predictions2[1,]
-
-#interpretations for the first person in the test set
-test.data1[1,]
-#low
--128.7379 -((1.393e-01*7.8)+(-4.491e+00*0.88)+(-5.361e-01*0)+(1.181e-01*2.6)+(-7.033e-01*.098)+(1.540e-02*25)+(-6.314e-03*67)+(-1.407e+02*.9968)+(9.928e-01*3.2)+(1.876e+00*.68)+(7.998e-01*9.8)+(-3.403e-01*0))
-exp(1.886621)/(1+exp(1.886621))
-#p(low) = .868
-
-#mid
--123.7421 -((1.393e-01*7.8)+(-4.491e+00*0.88)+(-5.361e-01*0)+(1.181e-01*2.6)+(-7.033e-01*.098)+(1.540e-02*25)+(-6.314e-03*67)+(-1.407e+02*.9968)+(9.928e-01*3.2)+(1.876e+00*.68)+(7.998e-01*9.8)+(-3.403e-01*0))
-exp(6.882421)/(1+exp(6.882421)) - exp(1.886621)/(1+exp(1.886621))
-#p(mid) = .131
-
-#high
-1 - exp(1.886621)/(1+exp(1.886621)) - (exp(6.882421)/(1+exp(6.882421)) - exp(1.886621)/(1+exp(1.886621)))
-#p(high) = .001
-
-#model diagnostics
-brant(model2)
-#less issues 
-#maybe issues stemmed from breaking down the levels too far
-
-#cross validation
-ctrl2 <- trainControl(method = "cv", number = 5)
-
-cv_model2 <- train(
-  NewQuality ~ . - ColorID, 
-  data = wine2, 
-  method = "polr",
-  trControl = ctrl2
+# Run cross-validation
+cv_xgb <- xgb.cv(
+  data = dtrain,
+  params = params,
+  nfold = 5,
+  nrounds = 100,
+  early_stopping_rounds = 10,
+  print_every_n = 10,
+  verbose = 1
 )
-
-cv_model2
-#using method = logistic, ~ 71% accuracy
-
-#feature selection
-#---
-step_model2 <- stepAIC(model2, direction = "both")
-summary(step_model2)
-
-#cross validation
-folds2 <- createFolds(wine2$NewQuality, k = 5)
-
-cv_results2 <- lapply(folds2, function(fold_indices2) {
-  train_fold2 <- wine2[-fold_indices2, ]
-  valid_fold2 <- wine2[fold_indices2, ]
-  
-  cv_model2 <- polr(NewQuality ~ ., data = train_fold2, Hess = TRUE)
-  step_model2 <- stepAIC(cv_model2, direction = "both", trace = 0)
-  
-  predictions3 <- predict(step_model2, newdata = valid_fold2, type = "class")
-  
-  # Convert predictions to ordered factor with correct levels
-  predictions3 <- factor(predictions3, ordered = TRUE, levels = levels(wine2$NewQuality))
-  
-  accuracy2 <- sum(predictions3 == valid_fold2$NewQuality) / length(valid_fold2$NewQuality)
-  return(accuracy2)
-})
-
-average_accuracy2 <- mean(unlist(cv_results2))
-average_accuracy2
-#~71% accuracy
-#---
-
-#random forest
-winerf2 <- randomForest(NewQuality ~ .- ColorID, data=train.data2, proximity=TRUE)
-#winerf2
-
-winep22 <- predict(winerf2, test.data2)
-confusionMatrix(winep22, test.data2$NewQuality)
-#~81 accuracy
+cv_xgb
 #----
 
 #RED VS WHITE
