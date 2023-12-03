@@ -41,10 +41,10 @@ plot(winelm)
 hist(resid(winelm))
 
 scale_mod(winelm)
-#PREPROCESSING
+#VIZZES & PREP
 #----
 #most visualizations and basic data exploration have been done elsewhere
-#no major changes are necessary
+#no major changes are blatantly necessary
 
 par(mfrow = c(1,2))
 #boxplot hist -- to change between hist & boxplot
@@ -61,7 +61,7 @@ hist(wine$Sulphates, main = "Sulphates")
 hist(wine$Alcohol, main = "Alcohol")
 hist(wine$Quality, main = "Quality")
 #most variables are slightly skewed right, not too major of a concern
-#transformations could be made, but not necessary
+#transformations could be made, but I am going to hold off for now
 #can check by color, too
 
 #check for multicollinearity
@@ -90,29 +90,39 @@ summary_table <- cbind(summary_table, "p value" = round(pval,3))
 summary_table
 
 #RMSE
-#would take quite a bit of time to get it to work properly with the given data, just decided to use another metric
 #---
 predictions <- round(predict(model1,test.data1,type = "probs"), 3)
-predictions_multiplied <- sweep(round(predictions,0), 2, as.numeric(colnames(predictions)), "*")
-predictions_multiplied_df <- as.data.frame(predictions_multiplied)
-predictions_multiplied_df
 
-predictions_non_zero <- apply(predictions_multiplied_df, 1, function(row) {
-  non_zero_values <- row[row != 0]
-  if (length(non_zero_values) > 0) {
-    return(paste(non_zero_values, collapse = ", "))
-  } else {
-    return("No non-zero values")
-  }
-})
+round_to_binary <- function(row) {
+  max_index <- which.max(row)
+  result <- numeric(length(row))
+  result[max_index] <- 1
+  return(result)
+}
 
-predictions_multiplied_df$NonZeroValues <- predictions_non_zero
-predictions_multiplied_df_no_zeros <- predictions_multiplied_df[, colSums(predictions_multiplied_df != 0) > 0]
-predictions_multiplied_df_no_zeros
+rounded_predictions <- t(apply(predictions, 1, round_to_binary))
+rounded_predictions_df <- as.data.frame(rounded_predictions)
+colnames(rounded_predictions_df) <- c("3", "4", "5", "6", "7", "8", "9")
 
-actual_ratings <- test_data$Quality
-rmse <- sqrt(mean((actual_ratings - predictions_multiplied_df)^2))
+get_non_zero_column <- function(row) {
+  non_zero_column <- colnames(rounded_predictions_df)[which(row != 0)]
+  return(ifelse(length(non_zero_column) > 0, non_zero_column, NA))
+}
+
+non_zero_column_column <- apply(rounded_predictions_df, 1, get_non_zero_column)
+rounded_predictions_df$values <- non_zero_column_column
+rounded_predictions_df_no_zeros <- rounded_predictions_df[, colSums(rounded_predictions_df != 0) > 0]
+#rounded_predictions_df_no_zeros
+
+rounded_predictions_df_no_zeros[,1:3] <- NULL
+predictionxx <- as.numeric(rounded_predictions_df_no_zeros$values)
+#predictionxx
+
+actual_ratings <- test_data$Quality - 2
+
+rmse <- sqrt(mean((actual_ratings - predictionxx)^2))
 rmse
+#1.018341
 #---
 
 #test for proportional odds assumption
@@ -133,7 +143,6 @@ cv_model <- train(
 cv_model
 #using method = logistic, ~ 54% accuracy
 
-
 #Feature selection
 #using stepwise AIC
 step_model <- stepAIC(model1, direction = "both")
@@ -145,7 +154,6 @@ brant(step_model)
 num_folds <- 5
 folds <- createFolds(wine$Quality, k = num_folds)
 
-#fix
 cv_results <- lapply(folds, function(fold_indices) {
   train_fold <- wine[-fold_indices, ]
   valid_fold <- wine[fold_indices, ]
@@ -199,6 +207,24 @@ pval2 <- pnorm(abs(summary_table2[, "t value"]),lower.tail = FALSE)* 2
 summary_table2 <- cbind(summary_table2, "p value" = round(pval2,3))
 summary_table2
 
+brant(model2)
+#less issues 
+#maybe issues stemmed from breaking down the levels too far
+
+#cross validation
+ctrl2 <- trainControl(method = "cv", number = 5)
+
+cv_model2 <- caret::train(
+  NewQuality ~. - ColorID, 
+  data = wine2, 
+  method = "polr", #multinom
+  trControl = ctrl2
+)
+
+cv_model2
+#using method = logistic, ~ 74% accuracy
+
+
 #predictions
 predictions2 <- round(predict(model2,test.data2,type = "p"), 3)
 predictions2[1,]
@@ -219,23 +245,6 @@ test.data1[1,]
 #1 - exp(1.886621)/(1+exp(1.886621)) - (exp(6.882421)/(1+exp(6.882421)) - exp(1.886621)/(1+exp(1.886621)))
 #p(high) = .001
 
-#model diagnostics
-brant(model2)
-#less issues 
-#maybe issues stemmed from breaking down the levels too far
-
-#cross validation
-ctrl2 <- trainControl(method = "cv", number = 5)
-
-cv_model2 <- train(
-  NewQuality ~ . - ColorID, 
-  data = wine2, 
-  method = "polr",
-  trControl = ctrl2
-)
-
-cv_model2
-#using method = logistic, ~ 71% accuracy
 
 #feature selection
 #---
@@ -275,9 +284,11 @@ confusionMatrix(winep22, test.data2$NewQuality)
 #~81 accuracy
 #----
 
+#-------------------------------------------------------------------------------
 #---
 # REST OF FILE IS JUST FOR TESTING
 #---
+#-------------------------------------------------------------------------------
 
 #RANDOM FOREST
 #----
@@ -481,3 +492,4 @@ Red_cv_model <- train(
 Red_cv_model
 #the saturated model for red wine predicts at a higher accuracy than white wine
 #----
+
