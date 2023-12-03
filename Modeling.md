@@ -12,13 +12,10 @@ Since the response variable (_Quality_ ) is ordinal, we took two approaches:​
    * High (>= 8)
       * Buckets were formed using a net-promoter-score based appoach. Since there are no observations of where  _Quality_  = 10, ranges for buckets were shifted down one.
      
-![Screen Shot 2023-11-30 at 5.00.02 PM.png](y7nQ2ld9kmAu)
+![CountByQualityCategory](https://github.com/olinyoder2534/Wine/blob/main/CountByQualityCategory.png)
            
 ### Regression
 Before training a model, additional preprocessing was needed. First, we removed the unncessary, duplicate variables, which included  _ColorID_ and  _QualityCategory_. We elected to not perform any pre-modeling feature selection, but would later incorporate models using feature-reduction techniques. Lastly, rather than using a simple train-test split, we elected to use 5-fold cross-validation and RMSE as a comparison metric. 
-
-We trained three models in Dataiku:
-[Regression Models](analysis:JRwsaCB0)  (to view models, click Models in the top right)
 
 ---
 
@@ -31,10 +28,10 @@ Formula (with scales variables):
 Quality = 6.0908 - 0.2457(VolatileAcidity) - 0.0793(TotalSulfurDioxide) + 0.1074(Sulphates) + 0.2971(ResidualSugar) + 0.0802(pH) + 0.0876(FreeSulfurDioxide) + 0.1103(FixedAcidity) - 0.3116(Density) - 0.3613(ColorWhite) - 0.0091(CitricAcid) - 0.0265(Chlorides) + 0.2656(Alcohol)
 ```
 
-![Screen Shot 2023-12-01 at 10.42.54 AM.png](TlNnjWeMdSy6)
+![Feature Importance](https://github.com/olinyoder2534/Wine/blob/main/FI_OLS_R.png)
 
 Error Distribution
-![Screen Shot 2023-12-01 at 10.43.10 AM.png](ezLo87g5jALq)
+![Error Distribution](https://github.com/olinyoder2534/Wine/blob/main/ED_OLS_R.png)
 
  _Density_ ,  _ResidualSugar_ , and  _Alcohol_  account for roughly half of the feature importance in the model. Additionally, the residuals may be slightly skewed left, but generally follow an approximately normal distribution with the median at -0.091456. The skewness could be due to the chart showing  the residuals for only first cross-validation fold. 
 
@@ -50,10 +47,10 @@ Formula (with scales variables):
 ```math
 Quality = 5.8184 - 0.1313(VolatileAcidity) + 0.2934(Alcohol)
 ```
-![Screen Shot 2023-12-01 at 11.11.04 AM.png](R2mdHRRPo2DN)
+![Feature Importance](https://github.com/olinyoder2534/Wine/blob/main/FI_L1_R.png)
 
 Error Distribution
-![Screen Shot 2023-12-01 at 11.10.51 AM.png](TIlnzC97pK1H)
+![Error Distribution](https://github.com/olinyoder2534/Wine/blob/main/ED_L1_R.png)
 
 L1 regularization removed all variables exept  _Alcohol_  and  _VolitileAcidity_ , which were the third and fourth most important features, respectively, in predicting  _Quality_  using OLS. While the OLS model had a lower RMSE, it was also much more complex. Which model to use depends on the value of simplicity.
 
@@ -72,10 +69,10 @@ Can we improve prediction accuracy using a tree-based approach?
 | Min samples per leaf | 8 |
 | Min samples to split | 24 |
 
-![Screen Shot 2023-12-01 at 11.17.52 AM.png](6IyzfSHoOIbu)
+![Feature Importance](https://github.com/olinyoder2534/Wine/blob/main/FI_RF_R.png)
 
 Error Distribution
-![Screen Shot 2023-12-01 at 11.18.26 AM.png](9cmPaMjlqRp5)
+![Error Distribution](https://github.com/olinyoder2534/Wine/blob/main/ED_RF_R.png)
 
 The random forest performs better (lower RMSE) than the linear regression based approaches, but at the cost of interpretability. Similar to the lasso regression approach, though, the random forest values  _Alcohol_  and  _VolitileAcidity_ most in predicting  _Quality_ . 
 
@@ -100,16 +97,13 @@ Using the three classes (low, mid, high) we previously created, we were also abl
   
 Like the regression models, before training, we first removed the unncessary, duplicate variables, which included  _ColorID_ and  _Quality_. We also had to account differing number of observations in each class, so we rebalanced _QualityCategory_ to have approximately even ratios. Lastly, rather than using a simple train-test split, we elected to use 5-fold cross-validation and, to keep consistency, accuracy as a comparison metric. 
 
-We trained three models in Dataiku:
-[Classification Models](analysis:azXrjbzo) (to view models, click Models in the top right)
-
  ---
  
 **1. Logistic Regression**
 Accuracy: 0.568
 MAUC: 0.767
 
-![Screen Shot 2023-12-02 at 7.00.41 PM.png](Ke74GJaTWBTp)
+![Feature Importance](https://github.com/olinyoder2534/Wine/blob/main/FI_LR_C.png)
 
 Confusion Matrix (first CV fold):
 
@@ -143,7 +137,7 @@ MAUC: 0.856
 | Min samples per leaf | 1 |
 | Min samples to split | 3 |
 
-![Screen Shot 2023-12-02 at 7.30.49 PM.png](N9S882GEcvR7)
+![Feature Importance](https://github.com/olinyoder2534/Wine/blob/main/FI_RF_C.png)
 
 Confusion Matrix (first CV fold):
 
@@ -181,7 +175,7 @@ MAUC: 0.784
 | Gamma (Min loss reduction to split a leaf) | 0 |
 | Min sum of instance weight in a child | 1 |
 
-![Screen Shot 2023-12-02 at 7.38.38 PM.png](04ORFk5S92KJ)
+![Feature Importance](https://github.com/olinyoder2534/Wine/blob/main/FI_XG_C.png)
 
 Confusion Matrix (first CV fold):
 
@@ -207,7 +201,7 @@ The XGBoost model values _Alcohol_ in creating its predictions more so than othe
   **Model Comparison**
 
 | Model    | Accuracy | MAUC |
-| -------- | ------- |
+| -------- | ------- |------- |
 | Logistic Regression | 0.568 | 0.767 |
 | Random Forest | 0.682 | 0.856 |
 | XGBoost | 0.623 | 0.784 |
