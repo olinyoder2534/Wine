@@ -1,5 +1,4 @@
 ## Modeling
-[Modeling](flow_zone:8hJWwWv)
 
 ### Question
 Can we predict the quality of a wine based on its attributes?
@@ -66,7 +65,7 @@ Can we improve prediction accuracy using a tree-based approach?
  **3. Random Forest**
  RMSE: 0.652
  
-| Hyperparamter    | Value |
+|Hyperparamter    | Value |
 | -------- | ------- |
 | Number of trees | 100 |
 | Max trees depth | 13 |
