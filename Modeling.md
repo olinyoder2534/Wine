@@ -101,6 +101,7 @@ Like the regression models, before training, we first removed the unncessary, du
  
 **1. Logistic Regression**
 Accuracy: 0.568
+
 MAUC: 0.767
 
 ![Feature Importance](https://github.com/olinyoder2534/Wine/blob/main/FI_LR_C.png)
@@ -128,6 +129,7 @@ The logistic regression models has an accuracy of 0.568, better .333, which repr
 **2. Random Forest**
 
 Accuracy: 0.682
+
 MAUC: 0.856
  
 | Hyperparamter    | Value |
@@ -163,6 +165,7 @@ The random forest performs better in all metric compared to the logistic regress
 **3. XGBoost**
  
 Accuracy: 0.623
+
 MAUC: 0.784
  
 | Hyperparamter    | Value |
