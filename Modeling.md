@@ -10,12 +10,12 @@ Since the response variable (_Quality_ ) is ordinal, we took two approaches:​
    * Low (<= 5)
    * Mid (6,7)
    * High (>= 8)
-      * Buckets were formed using a net-promoter-score based appoach. Since there are no observations of where  _Quality_  = 10, ranges for buckets were shifted down one.
+      * Buckets were formed using a net-promoter-score based approach. Since there are no observations of where  _Quality_  = 10, ranges for buckets were shifted down one.
      
 ![CountByQualityCategory](https://github.com/olinyoder2534/Wine/blob/main/CountByQualityCategory.png)
            
 ### Regression
-Before training a model, additional preprocessing was needed. First, we removed the unncessary, duplicate variables, which included  _ColorID_ and  _QualityCategory_. We elected to not perform any pre-modeling feature selection, but would later incorporate models using feature-reduction techniques. Lastly, rather than using a simple train-test split, we elected to use 5-fold cross-validation and RMSE as a comparison metric. 
+Before training a model, additional preprocessing was needed. First, we removed the unnecessary, duplicate variables, which included  _ColorID_ and  _QualityCategory_. We elected to not perform any pre-modeling feature selection, but would later incorporate models using feature-reduction techniques. Lastly, rather than using a simple train-test split, we elected to use 5-fold cross-validation and RMSE as a comparison metric. 
 
 ---
 
@@ -33,7 +33,7 @@ Quality = 6.0908 - 0.2457(VolatileAcidity) - 0.0793(TotalSulfurDioxide) + 0.1074
 Error Distribution
 ![Error Distribution](https://github.com/olinyoder2534/Wine/blob/main/ED_OLS_R.png)
 
- _Density_ ,  _ResidualSugar_ , and  _Alcohol_  account for roughly half of the feature importance in the model. Additionally, the residuals may be slightly skewed left, but generally follow an approximately normal distribution with the median at -0.091456. The skewness could be due to the chart showing  the residuals for only first cross-validation fold. 
+ _Density_ ,  _ResidualSugar_ , and  _Alcohol_  account for roughly half of the feature importance in the model. Additionally, the residuals may be slightly skewed left, but generally follow an approximately normal distribution with the median at -0.091456. The skewness could be due to the chart showing  the residuals for only the first cross-validation fold. 
 
 Can we improve prediction accuracy using L1 regularization?
 
@@ -52,7 +52,7 @@ Quality = 5.8184 - 0.1313(VolatileAcidity) + 0.2934(Alcohol)
 Error Distribution
 ![Error Distribution](https://github.com/olinyoder2534/Wine/blob/main/ED_L1_R.png)
 
-L1 regularization removed all variables exept  _Alcohol_  and  _VolitileAcidity_ , which were the third and fourth most important features, respectively, in predicting  _Quality_  using OLS. While the OLS model had a lower RMSE, it was also much more complex. Which model to use depends on the value of simplicity.
+L1 regularization removed all variables except  _Alcohol_  and  _VolitileAcidity_ , which were the third and fourth most important features, respectively, in predicting  _Quality_  using OLS. While the OLS model had a lower RMSE, it was also much more complex. Which model to use depends on the value of simplicity.
 
 Can we improve prediction accuracy using a tree-based approach?
 
@@ -86,16 +86,16 @@ The random forest performs better (lower RMSE) than the linear regression based 
 | Lasso | 0.762 (± 0.021) |
 | Random Forest | 0.652 (± 0.025) |
 
-Of the three models, the random forest performed the best. However, for two of the models, we used a linear regression based approache on an ordinal response variable. As such, we also trained an ordinal regression model ([link](https://github.com/olinyoder2534/Wine/blob/main/Wine.R)).
+Of the three models, the random forest performed the best. However, for two of the models, we used a linear regression based approach on an ordinal response variable. As such, we also trained an ordinal regression model ([link](https://github.com/olinyoder2534/Wine/blob/main/Wine.R)).
 
-Ordinal regression and classical regression often use different comparison metrics. While we could have used a ten class classification random forest, we elected to compare the models using by computing RMSE for the ordinal regression model and use accuracy for the random forest. To calculate accuracy from the regression-based random forest, we randomly selected half of the original data and made predictions on it. While this does mean testing the model on data it was also trained on, the alternative was to use two train-test split. However, this would involve significantly diminishing the size of the already small data set.
+Ordinal regression and classical regression often use different comparison metrics. While we could have used a ten class classification random forest, we elected to compare the models by computing RMSE for the ordinal regression model and use accuracy for the random forest. To calculate accuracy from the regression-based random forest, we randomly selected half of the original data and made predictions on it. While this does mean testing the model on data it was also trained on, the alternative was to use two train-test splits. However, this would involve significantly diminishing the size of the already small data set.
 
 We rounded the random forest's predictions to the nearest whole number and calculated the accuracy, which was roughly 72% ([link](https://github.com/olinyoder2534/Wine/blob/main/ConvertToAccuracy.R)). Using 5-fold cross-validation, the ordinal regression model with method = logistic performed at 54% accuracy. Likewise, the RMSE for the random forest was 0.652 while RMSE for the ordinal regression model was 1.018, surprisingly worse than the OLS and lasso models. 
 
 ### Classification
 Using the three classes (low, mid, high) we previously created, we were also able to perform classification. 
   
-Like the regression models, before training, we first removed the unncessary, duplicate variables, which included  _ColorID_ and  _Quality_. We also had to account differing number of observations in each class, so we rebalanced _QualityCategory_ to have approximately even ratios. Lastly, rather than using a simple train-test split, we elected to use 5-fold cross-validation and, to keep consistency, accuracy as a comparison metric. 
+Like the regression models, before training, we first removed the unnecessary, duplicate variables, which included  _ColorID_ and  _Quality_. We also had to account for the differing number of observations in each class, so we rebalanced _QualityCategory_ to have approximately even ratios. Lastly, rather than using a simple train-test split, we elected to use 5-fold cross-validation and, to keep consistency, accuracy as a comparison metric. 
 
  ---
  
@@ -122,7 +122,7 @@ AUC:
 | Mid | 0.691 |
 | High | 0.885 |
 
-The logistic regression models has an accuracy of 0.568, better .333, which represents random guessing. Similar to the  regression models,  _Alcohol_  is among the most important variables in predicting  _Quality_ . Additionally, the model has a MAUC of 0.767, which is acceptable. In general, the model tends to be able to predict wines of _QualityCategory_ low and high with greater accuracy than mid. 
+The logistic regression model has an accuracy of 0.568, better than .333, which represents random guessing. Similar to the  regression models,  _Alcohol_  is among the most important variables in predicting  _Quality_ . Additionally, the model has a MAUC of 0.767, which is acceptable. In general, the model tends to be able to predict wines of _QualityCategory_ low and high with greater accuracy than mid. 
 
  ---
 
@@ -158,7 +158,7 @@ AUC:
 | High | 0.928 |
 
 
-The random forest performs better in all metric compared to the logistic regression model. Like all previous models, the classification random forest values  _Alcohol_  highly in predicting  _Quality_ . 
+The random forest performs better in all metrics compared to the logistic regression model. Like all previous models, the classification random forest values  _Alcohol_  highly in predicting  _Quality_ . 
 
  ---
  
@@ -197,7 +197,7 @@ AUC:
 | High | 0.873 |
 
 
-The XGBoost model values _Alcohol_ in creating its predictions more so than other models. In terms of performance, the XGBoost model performs better overall compared to the logistic regression model, but is worse at predicting mid rated wines. Compared to the random forest, the XGBoost models performs worse across the board. 
+The XGBoost model values _Alcohol_ in creating its predictions more so than other models. In terms of performance, the XGBoost model performs better overall compared to the logistic regression model, but is worse at predicting mid rated wines. Compared to the random forest, the XGBoost model performs worse across the board. 
 
   ---
   
@@ -213,11 +213,11 @@ Of the three models, the random forest performed the best. Similar to our regres
 
 Using 5-fold cross-validation, the ordinal regression model with method = logistic performed at 74% accuracy, slightly higher than the regression random forest and all classification models. 
 
-Suprisingly, the regression random forest model had a higher converted accuracy than the classification random forest. However, this is likely because the data used for predictions for the regression random forest was also responsible for training the model. 
+Surprisingly, the regression random forest model had a higher converted accuracy than the classification random forest. However, this is likely because the data used for predictions for the regression random forest was also responsible for training the model. 
 
 ### Shortcomings
 * While there is ample data to train a solid model, having more observations would have open doors for more exploration
-* There are limited dataiku features on Dataiku for ordinal regression
+* There are limited features on Dataiku for ordinal regression
 
 ### Conclusion
 Regardless of approach, for this data set, random forests were generally the best machine learning model for predicting a quality of wine. Additionally, the alcohol concentration of a wine is the most important attribute in predicting its quality.
