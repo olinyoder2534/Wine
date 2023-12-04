@@ -44,7 +44,7 @@ scale_mod(winelm)
 #VIZZES & PREP
 #----
 #most visualizations and basic data exploration have been done elsewhere
-#no major changes are blatantly necessary
+#no major changes are necessary
 
 par(mfrow = c(1,2))
 #boxplot hist -- to change between hist & boxplot
