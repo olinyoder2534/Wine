@@ -52,7 +52,7 @@ Quality = 5.8184 - 0.1313(VolatileAcidity) + 0.2934(Alcohol)
 Error Distribution
 ![Error Distribution](https://github.com/olinyoder2534/Wine/blob/main/ED_L1_R.png)
 
-L1 regularization removed all variables except  _Alcohol_  and  _VolitileAcidity_ , which were the third and fourth most important features, respectively, in predicting  _Quality_  using OLS. While the OLS model had a lower RMSE, it was also much more complex. Which model to use depends on the value of simplicity.
+L1 regularization removed all variables except  _Alcohol_  and  _VolatileAcidity_ , which were the third and fourth most important features, respectively, in predicting  _Quality_  using OLS. While the OLS model had a lower RMSE, it was also much more complex. Which model to use depends on the value of simplicity.
 
 Can we improve prediction accuracy using a tree-based approach?
 
@@ -74,7 +74,7 @@ Can we improve prediction accuracy using a tree-based approach?
 Error Distribution
 ![Error Distribution](https://github.com/olinyoder2534/Wine/blob/main/ED_RF_R.png)
 
-The random forest performs better (lower RMSE) than the linear regression based approaches, but at the cost of interpretability. Similar to the lasso regression approach, though, the random forest values  _Alcohol_  and  _VolitileAcidity_ most in predicting  _Quality_ . 
+The random forest performs better (lower RMSE) than the linear regression based approaches, but at the cost of interpretability. Similar to the lasso regression approach, though, the random forest values  _Alcohol_  and  _VolatileAcidity_ most in predicting  _Quality_ . 
 
  ---
 
@@ -217,6 +217,7 @@ Surprisingly, the regression random forest model had a higher converted accuracy
 
 ### Shortcomings
 * While there is ample data to train a solid model, having more observations would have open doors for further exploration
+* Potential issues stemming from hard-coding RMSE for ordinal regression model
 * There are limited features on Dataiku for ordinal regression
 
 ### Conclusion
