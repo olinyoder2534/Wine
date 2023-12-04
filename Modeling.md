@@ -23,7 +23,7 @@ Before training a model, additional preprocessing was needed. First, we removed 
  
 RMSE: 0.735 (± 0.021)
 
-Formula (with scales variables): 
+Formula (with scaled variables): 
 ```math
 Quality = 6.0908 - 0.2457(VolatileAcidity) - 0.0793(TotalSulfurDioxide) + 0.1074(Sulphates) + 0.2971(ResidualSugar) + 0.0802(pH) + 0.0876(FreeSulfurDioxide) + 0.1103(FixedAcidity) - 0.3116(Density) - 0.3613(ColorWhite) - 0.0091(CitricAcid) - 0.0265(Chlorides) + 0.2656(Alcohol)
 ```
@@ -43,7 +43,7 @@ Can we improve prediction accuracy using L1 regularization?
 
 RMSE: 0.762 (± 0.021)
 
-Formula (with scales variables): 
+Formula (with scaled variables): 
 ```math
 Quality = 5.8184 - 0.1313(VolatileAcidity) + 0.2934(Alcohol)
 ```
@@ -216,7 +216,7 @@ Using 5-fold cross-validation, the ordinal regression model with method = logist
 Surprisingly, the regression random forest model had a higher converted accuracy than the classification random forest. However, this is likely because the data used for predictions for the regression random forest was also responsible for training the model. 
 
 ### Shortcomings
-* While there is ample data to train a solid model, having more observations would have open doors for more exploration
+* While there is ample data to train a solid model, having more observations would have open doors for further exploration
 * There are limited features on Dataiku for ordinal regression
 
 ### Conclusion
