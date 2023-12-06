@@ -221,7 +221,6 @@ Surprisingly, the regression random forest model had a higher converted accuracy
 * There are limited features on Dataiku for ordinal regression
 
 ### Conclusion
-Regardless of approach, for this data set, random forests were generally the best machine learning model for predicting a quality of wine. Additionally, the alcohol concentration of a wine is the most important attribute in predicting its quality.
-
+Regardless of regression or classification approach, random forests are the best machine learning model and alcohol concentration and volatile acidity are generally the most important attributes in predicting the quality of wine. As alcohol concentration increases, so too does quality. Conversely, as volatile acidity increases, quality decreases. However, like with most models, extrapolation may prove difficult. For example, a wine with a 40% alcohol concentration is not guaranteed to have higher quality than a wine of 15% alcohol concentration while holding all other variables constant. In practice, there is likely an inverse u-shaped relationship between alcohol concentration and quality. Likewise, despite the inverse relationship between volatile acidity and quality, a wine without a volatile acidity reading will likely be of poor quality. Think of volatile acidity like adding salt to a cake: a little is necessary, but too much will warrant unwanted tastes. Ultimately, while extrapolation is difficult, it is highly unlikely to find a wine with attributes outside of the ranges provided in this data set suggesting that the models provided will provide a solid estimate for the quality of most wines.
 
   
